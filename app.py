@@ -76,11 +76,11 @@ if "uploader_key" not in st.session_state:
 if "session_id" not in st.session_state:
     st.session_state.session_id = str(uuid.uuid4())
     
-if "last_chunks" not in st.session_state:
-    st.session_state.last_chunks = []
+# if "last_chunks" not in st.session_state:
+#     st.session_state.last_chunks = []
 
-if "show_sources_panel" not in st.session_state:
-    st.session_state.show_sources_panel = False
+# if "show_sources_panel" not in st.session_state:
+#     st.session_state.show_sources_panel = False
 
 
 # Sidebar: document management
@@ -195,9 +195,27 @@ with st.sidebar:
 
 # Chat area 
 # Previous messages
-for msg in st.session_state.messages:
+for i, msg in enumerate(st.session_state.messages): #for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
+        
+         # Per-message "View Sources" button (only for assistant messages with citations)
+        if msg["role"] == "assistant" and msg.get("citations"):
+            toggle_key = f"show_sources_{i}"
+            if toggle_key not in st.session_state:
+                st.session_state[toggle_key] = False
+
+            if st.button("📎 View Sources", key=f"btn_{i}"):
+                st.session_state[toggle_key] = not st.session_state[toggle_key]
+
+            if st.session_state[toggle_key]:
+                with st.container(border=True):
+                    st.caption(f"{len(msg['citations'])} chunks")
+                    for c in msg["citations"]:
+                        st.markdown(
+                            f"**{c['source']}** — page {c['page']} "
+                            f"*(relevance: {c['score']})*\n\n> {c['text'][:300]}..."
+                        )
 
         # if "citations" in msg and msg["citations"]:
         #     with st.expander(f"Sources ({len(msg['citations'])} chunks)"):
@@ -208,24 +226,23 @@ for msg in st.session_state.messages:
         #             )
 placeholder = "Ask about your documents..." if has_docs else "Ask me anything..."
 
-if has_docs:
-    col1, col2 = st.columns([1, 5])
-    with col1:
-        if st.button("📎 View Sources", use_container_width=True):
-            st.session_state.show_sources_panel = not st.session_state.show_sources_panel
+# if has_docs:
+#     col1, col2 = st.columns([1, 5])
+#     with col1:
+#         if st.button("📎 View Sources", use_container_width=True):
+#             st.session_state.show_sources_panel = not st.session_state.show_sources_panel
 
-    if st.session_state.show_sources_panel:
-        with st.container(border=True):
-            if st.session_state.last_chunks:
-                st.caption(f"Sources from your last question ({len(st.session_state.last_chunks)} chunks)")
-                for c in st.session_state.last_chunks:
-                    st.markdown(
-                        f"**{c['source']}** — page {c['page']} "
-                        f"*(relevance: {c['score']})*\n\n> {c['text'][:300]}..."
-                    )
-            else:
-                st.caption("No sources yet — ask a question first.")
-
+#     if st.session_state.show_sources_panel:
+#         with st.container(border=True):
+#             if st.session_state.last_chunks:
+#                 st.caption(f"Sources from your last question ({len(st.session_state.last_chunks)} chunks)")
+#                 for c in st.session_state.last_chunks:
+#                     st.markdown(
+#                         f"**{c['source']}** — page {c['page']} "
+#                         f"*(relevance: {c['score']})*\n\n> {c['text'][:300]}..."
+#                     )
+#             else:
+#                 st.caption("No sources yet — ask a question first.")
 
 if question := st.chat_input(placeholder):
 
@@ -265,15 +282,15 @@ if question := st.chat_input(placeholder):
                     ask_stream(question, st.session_state.chat_history, session_id=st.session_state.session_id)
                 )
                 citations = ask_stream.last_chunks
-                st.session_state.last_chunks = citations
+                # st.session_state.last_chunks = citations
 
-                if citations:
-                    with st.expander(f"Sources ({len(citations)} chunks)"):
-                        for c in citations:
-                            st.markdown(
-                                f"**{c['source']}** — page {c['page']} "
-                                f"*(relevance: {c['score']})*\n\n> {c['text'][:300]}..."
-                            )
+                # if citations:
+                #     with st.expander(f"Sources ({len(citations)} chunks)"):
+                #         for c in citations:
+                #             st.markdown(
+                #                 f"**{c['source']}** — page {c['page']} "
+                #                 f"*(relevance: {c['score']})*\n\n> {c['text'][:300]}..."
+                #             )
             except RuntimeError as e:
                 response_text = str(e)
                 citations = []
@@ -300,6 +317,7 @@ if question := st.chat_input(placeholder):
                         if text:
                             yield text
 
+                typing_placeholder.empty()
                 response_text = st.write_stream(general_chat_stream())
 
             except Exception as e:
