@@ -3,6 +3,7 @@ import tempfile
 import os
 import streamlit as st
 from groq import Groq
+import uuid
 
 from ingest.loader import load_document
 from ingest.chunker import chunk_pages
@@ -41,11 +42,20 @@ def load_knowledge_base():
             continue
         filepath = os.path.join(KNOWLEDGE_BASE_DIR, filename)
         try:
-            pages = load_document(filepath)
+            # pages = load_document(filepath)
+            # for page in pages:
+            #     page["metadata"]["source"] = tagged_name
+            # chunks = chunk_pages(pages)
+            # embed_chunks(chunks)
+            pages = load_document(tmp_path)
+    
             for page in pages:
-                page["metadata"]["source"] = tagged_name
+                page["metadata"]["source"] = uploaded_file.name
+                page["metadata"]["session_id"] = st.session_state.session_id 
+
             chunks = chunk_pages(pages)
             embed_chunks(chunks)
+            st.success(f"✓ {uploaded_file.name}")
         except Exception as e:
             st.warning(f"Could not load knowledge base file {filename}: {e}")
 
@@ -61,6 +71,9 @@ if "messages" not in st.session_state:
     
 if "uploader_key" not in st.session_state: 
     st.session_state.uploader_key = 0
+
+if "session_id" not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())
 
 
 # Sidebar: document management
@@ -92,7 +105,9 @@ with st.sidebar:
                         pages = load_document(tmp_path)
                         
                         for page in pages:
-                            page["metadata"]["source"] = uploaded_file.name
+                            # page["metadata"]["source"] = uploaded_file.name
+                             page["metadata"]["source"] = uploaded_file.name
+                             page["metadata"]["session_id"] = st.session_state.session_id
 
                         chunks = chunk_pages(pages)
                         embed_chunks(chunks)
@@ -127,7 +142,7 @@ with st.sidebar:
     #     st.info("No documents ingested yet.")
     
     try:
-        docs = list_documents()
+        docs = list_documents(session_id=st.session_state.session_id)
         has_docs = bool(docs)
     except Exception:
         docs = []
@@ -152,7 +167,7 @@ with st.sidebar:
                 col1, col2 = st.columns([4, 1])
                 col1.write(f"🗂️ {doc}")
                 if col2.button("✕", key=f"del_{doc}", help=f"Remove {doc}"):
-                    delete_document(doc)
+                    delete_document(doc, session_id=st.session_state.session_id)
                     st.rerun()
     else:
         st.info("No documents ingested yet.")
@@ -217,7 +232,7 @@ if question := st.chat_input(placeholder):
         if has_docs:
             try:
                 response_text = st.write_stream(
-                    ask_stream(question, st.session_state.chat_history)
+                    ask_stream(question, st.session_state.chat_history, session_id=st.session_state.session_id)
                 )
                 citations = ask_stream.last_chunks
 

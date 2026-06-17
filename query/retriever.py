@@ -12,7 +12,7 @@ TOP_K = 5
 MIN_SIMILARITY = 0.30     
 
 
-def retrieve(query: str, top_k: int = TOP_K) -> list[dict]:
+def retrieve(query: str, top_k: int = TOP_K, session_id: str = None) -> list[dict]:
     """
     Search the vector store for chunks relevant to the query.
 
@@ -29,11 +29,19 @@ def retrieve(query: str, top_k: int = TOP_K) -> list[dict]:
     if collection.count() == 0:
         raise RuntimeError("Vector store is empty. Run ingest first.")
 
-    results = collection.query(
-        query_texts=[query],
-        n_results=min(top_k, collection.count()),
-        include=["documents", "metadatas", "distances"],
-    )
+    # results = collection.query(
+    #     query_texts=[query],
+    #     n_results=min(top_k, collection.count()),
+    #     include=["documents", "metadatas", "distances"],
+    # )
+
+    query_kwargs = {
+        "query_texts": [query],
+        "n_results": min(top_k * 3, collection.count()),
+        "include": ["documents", "metadatas", "distances"],
+    }
+     
+    results = collection.query(**query_kwargs)
 
     chunks = []
     for doc, meta, dist in zip(
@@ -41,6 +49,12 @@ def retrieve(query: str, top_k: int = TOP_K) -> list[dict]:
         results["metadatas"][0],
         results["distances"][0],
     ):
+        
+        # Session boundary check
+        meta_session = meta.get("session_id")
+        if session_id is not None:
+            if meta_session is not None and meta_session != session_id:
+                continue
     
         similarity = 1 - (dist / 2)
 
@@ -53,5 +67,8 @@ def retrieve(query: str, top_k: int = TOP_K) -> list[dict]:
             "page":   meta["page"],
             "score":  round(similarity, 3),
         })
+        
+        if len(chunks) >= top_k:
+            break
 
     return chunks

@@ -43,7 +43,7 @@ def build_context(chunks: list[dict]) -> str:
     return "\n\n---\n\n".join(lines)
 
 
-def ask(question: str, chat_history: list[dict] = None) -> tuple[str, list[dict]]:
+def ask(question: str, chat_history: list[dict] = None, session_id: str = None) -> tuple[str, list[dict]]:
     """
     Ask a question against the ingested documents.
 
@@ -60,7 +60,7 @@ def ask(question: str, chat_history: list[dict] = None) -> tuple[str, list[dict]
     if chat_history is None:
         chat_history = []
 
-    chunks = retrieve(question)
+    chunks = retrieve(question, session_id=session_id)
 
     if not chunks:
         no_context_msg = "I couldn't find relevant information in the uploaded documents."
@@ -84,7 +84,7 @@ def ask(question: str, chat_history: list[dict] = None) -> tuple[str, list[dict]
     return answer, chunks
 
 
-def ask_stream(question: str, chat_history: list[dict] = None):
+def ask_stream(question: str, chat_history: list[dict] = None, session_id: str = None):
     """
     Streaming version of ask() — yields text chunks as they arrive.
     Use this in Streamlit with st.write_stream().
@@ -96,7 +96,7 @@ def ask_stream(question: str, chat_history: list[dict] = None):
     if chat_history is None:
         chat_history = []
 
-    chunks = retrieve(question)
+    chunks = retrieve(question, session_id=session_id)
     ask_stream.last_chunks = chunks 
 
     if not chunks:

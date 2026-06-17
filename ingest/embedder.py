@@ -40,8 +40,13 @@ def embed_chunks(chunks: list[dict]) -> None:
     texts = [c["text"] for c in chunks]
     metadatas = [c["metadata"] for c in chunks]
 
+    # ids = [
+    #     f"{m['source']}_p{m['page']}_c{m['chunk_index']}"
+    #     for m in metadatas
+    # ]
+    
     ids = [
-        f"{m['source']}_p{m['page']}_c{m['chunk_index']}"
+        f"{m.get('session_id', 'shared')}_{m['source']}_p{m['page']}_c{m['chunk_index']}"
         for m in metadatas
     ]
 
@@ -65,13 +70,23 @@ def delete_document(source_filename: str) -> None:
     print(f"Deleted all chunks for: {source_filename}")
 
 
-def list_documents() -> list[str]:
+def list_documents(session_id: str = None) -> list[str]:
     """Return a list of unique source filenames in the vector store."""
     collection = get_collection()
     results = collection.get(include=["metadatas"])
 
     sources = set()
+    # for meta in results["metadatas"]:
+    #     sources.add(meta["source"])
+
+    # return sorted(sources)
     for meta in results["metadatas"]:
-        sources.add(meta["source"])
+        meta_session = meta.get("session_id")
+
+        if meta_session is None:
+            sources.add(meta["source"])
+
+        elif session_id and meta_session == session_id:
+            sources.add(meta["source"])
 
     return sorted(sources)
