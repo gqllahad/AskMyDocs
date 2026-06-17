@@ -4,6 +4,7 @@ import os
 import streamlit as st
 from groq import Groq
 import uuid
+import time
 
 from ingest.loader import load_document
 from ingest.chunker import chunk_pages
@@ -74,6 +75,12 @@ if "uploader_key" not in st.session_state:
 
 if "session_id" not in st.session_state:
     st.session_state.session_id = str(uuid.uuid4())
+    
+if "last_chunks" not in st.session_state:
+    st.session_state.last_chunks = []
+
+if "show_sources_panel" not in st.session_state:
+    st.session_state.show_sources_panel = False
 
 
 # Sidebar: document management
@@ -192,14 +199,33 @@ for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-        if "citations" in msg and msg["citations"]:
-            with st.expander(f"Sources ({len(msg['citations'])} chunks)"):
-                for c in msg["citations"]:
+        # if "citations" in msg and msg["citations"]:
+        #     with st.expander(f"Sources ({len(msg['citations'])} chunks)"):
+        #         for c in msg["citations"]:
+        #             st.markdown(
+        #                 f"**{c['source']}** — page {c['page']} "
+        #                 f"*(relevance: {c['score']})*\n\n> {c['text'][:300]}..."
+        #             )
+placeholder = "Ask about your documents..." if has_docs else "Ask me anything..."
+
+if has_docs:
+    col1, col2 = st.columns([1, 5])
+    with col1:
+        if st.button("📎 View Sources", use_container_width=True):
+            st.session_state.show_sources_panel = not st.session_state.show_sources_panel
+
+    if st.session_state.show_sources_panel:
+        with st.container(border=True):
+            if st.session_state.last_chunks:
+                st.caption(f"Sources from your last question ({len(st.session_state.last_chunks)} chunks)")
+                for c in st.session_state.last_chunks:
                     st.markdown(
                         f"**{c['source']}** — page {c['page']} "
                         f"*(relevance: {c['score']})*\n\n> {c['text'][:300]}..."
                     )
-placeholder = "Ask about your documents..." if has_docs else "Ask me anything..."
+            else:
+                st.caption("No sources yet — ask a question first.")
+
 
 if question := st.chat_input(placeholder):
 
@@ -209,6 +235,8 @@ if question := st.chat_input(placeholder):
     st.session_state.messages.append({"role": "user", "content": question})
 
     with st.chat_message("assistant"):
+        typing_placeholder = st.empty()
+        typing_placeholder.markdown("● ● ●")
         # try:
         #     response_text = st.write_stream(
         #         ask_stream(question, st.session_state.chat_history)
@@ -231,10 +259,13 @@ if question := st.chat_input(placeholder):
         # 📄 DOCUMENT MODE
         if has_docs:
             try:
+                typing_placeholder.empty()
+                
                 response_text = st.write_stream(
                     ask_stream(question, st.session_state.chat_history, session_id=st.session_state.session_id)
                 )
                 citations = ask_stream.last_chunks
+                st.session_state.last_chunks = citations
 
                 if citations:
                     with st.expander(f"Sources ({len(citations)} chunks)"):
