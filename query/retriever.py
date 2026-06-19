@@ -10,7 +10,7 @@ from ingest.embedder import get_collection
 
 TOP_K = 5  #5            
 MIN_SIMILARITY = 0.15 #0.30     
-PRIORITY_BOOST = 0.15            # bonus added to priority chunks' similarity score
+PRIORITY_BOOST = 0.15       
 PRIORITY_MIN_SIMILARITY = 0.20 
 
 def _get_priority_chunks(collection, session_id: str = None) -> list[dict]:
@@ -91,6 +91,7 @@ def retrieve(query: str, top_k: int = TOP_K, session_id: str = None) -> list[dic
     candidates.sort(key=lambda c: c["score"], reverse=True)
     return candidates[:top_k]
 
+#verion 1
 # def retrieve(query: str, top_k: int = TOP_K, session_id: str = None) -> list[dict]:
 #     """
 #     Search the vector store for chunks relevant to the query.

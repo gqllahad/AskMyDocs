@@ -43,14 +43,6 @@ def chunk_pages(pages: list[dict], chunk_size: int = 600, overlap: int = 80) -> 
             
             if is_first_page and i == 0:
                 metadata["priority"] = "always"
-
-            # chunks.append({
-            #     "text": chunk_text.strip(),
-            #     "metadata": {
-            #         **page["metadata"],  
-            #         "chunk_index": i,       
-            #     }
-            # })
             
             chunks.append({
                 "text": chunk_text.strip(),

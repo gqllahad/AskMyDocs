@@ -39,11 +39,6 @@ def embed_chunks(chunks: list[dict]) -> None:
 
     texts = [c["text"] for c in chunks]
     metadatas = [c["metadata"] for c in chunks]
-
-    # ids = [
-    #     f"{m['source']}_p{m['page']}_c{m['chunk_index']}"
-    #     for m in metadatas
-    # ]
     
     ids = [
         f"{m.get('session_id', 'shared')}_{m['source']}_p{m['page']}_c{m['chunk_index']}"
@@ -61,13 +56,6 @@ def embed_chunks(chunks: list[dict]) -> None:
         print(f"Embedded chunks {i + 1}–{batch_end} / {len(chunks)}")
 
     print(f"Done. Collection now has {collection.count()} chunks total.")
-
-
-# def delete_document(source_filename: str) -> None:
-#     """Remove all chunks belonging to a specific file."""
-#     collection = get_collection()
-#     collection.delete(where={"source": source_filename})
-#     print(f"Deleted all chunks for: {source_filename}")
 
 def delete_document(source_filename: str, session_id: str = None) -> None:
     """Remove all chunks belonging to a specific file (scoped to a session if given)."""
@@ -96,10 +84,7 @@ def list_documents(session_id: str = None) -> list[str]:
     results = collection.get(include=["metadatas"])
 
     sources = set()
-    # for meta in results["metadatas"]:
-    #     sources.add(meta["source"])
 
-    # return sorted(sources)
     for meta in results["metadatas"]:
         meta_session = meta.get("session_id")
 
