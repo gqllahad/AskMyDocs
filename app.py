@@ -11,7 +11,6 @@ from ingest.chunker import chunk_pages
 from ingest.embedder import embed_chunks, list_documents, delete_document
 from query.generator import ask_stream
 
-# Page config
 
 st.set_page_config(
     page_title="DocuGallery",
