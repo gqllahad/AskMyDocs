@@ -1,7 +1,4 @@
-"""
-generator.py — Builds a prompt from retrieved chunks and streams
-the LLM's answer back with source citations.
-"""
+
 
 import os
 from groq import Groq
@@ -15,7 +12,9 @@ from query.retriever import retrieve
 import streamlit as st
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-LLM_MODEL = "llama-3.3-70b-versatile" 
+# LLM_MODEL = "llama-3.3-70b-versatile" 
+# LLM_MODEL = "llama-3.1-8b-instant"
+LLM_MODEL = "openai/gpt-oss-20b"
 
 
 SYSTEM_PROMPT = """You are a helpful assistant that answers questions strictly 
@@ -49,11 +48,7 @@ def ask(question: str, chat_history: list[dict] = None, session_id: str = None) 
 
     Args:
         question:     The user's question string.
-        chat_history: Previous turns as [{"role": "user"|"assistant", "content": str}].
-                      Pass None or [] for a fresh conversation.
-
     Returns:
-        (answer_text, retrieved_chunks)
         — answer_text is the full LLM response
         — retrieved_chunks lets the UI display source citations
     """
